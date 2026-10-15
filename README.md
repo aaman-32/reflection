@@ -107,7 +107,9 @@ Your api should be available on [localhost:8080](http://localhost:8080/api) (or 
 ## Endpoints
 The following are the available endpoints, their request types and example JSON:
 
-### 1. Health check - `/api`
+### 1. Health check
+`GET /api`
+
 Checks whether the API server is running.
 
 **Example request**
@@ -124,8 +126,8 @@ GET /api
 }
 ```
 
-### 2. Search - `/api/search/:type?query=...`
-**GET**
+### 2. Search
+`GET /api/search/:type?query=...`
 
 Searches a supported media catalogue.
 
@@ -228,8 +230,8 @@ GET /api/search/movie?query=Inception
 }
 ```
 
-### 3. Download - `/api/download/:type?query=...&media=...`
-**GET**
+### 3. Download
+`GET /api/download/:type?query=...&media=...`
 
 Searches for or accepts a URL, processes the selected media, uploads the resulting file to a temporary file host, and returns a URL to the hosted file.
 
@@ -292,8 +294,8 @@ GET /api/download/yt?query=artist%20song%20name&media=audio
 }
 ```
 
-### 4. Upload - `/api/upload/:type`
-**POST**
+### 4. Upload
+`POST /api/upload/:type`
 
 Uploads an image or file to ImgBB or a temporary host respectively.
 
