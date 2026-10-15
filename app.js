@@ -16,6 +16,7 @@ app.use(cors());
 const configs = {
     max_process_limit: 1,
     max_file_size: 100 * 1024 * 1024, // 100 MB
+    port: 8080
 }
 
 const _upload = multer({ dest: os.tmpdir() });
@@ -188,5 +189,5 @@ app.post('/api/upload/:type', _upload.single('image'), async (req, res) => {
 
 export default app;
 
-const PORT = process.env.PORT || 8080;
+const PORT = process.env.PORT || configs.port;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

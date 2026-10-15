@@ -2,45 +2,33 @@
 
 **Reflection** is an open-source Express.js API for searching media metadata, processing YouTube audio/video downloads, and uploading images. It provides a small HTTP interface over third-party services.
 
-**Maintained by [Halo Studios](https://halostudios.xyz).**  
-**Repository:** https://github.com/amanumar32/reflection
-
 ## Contents
 
 - [Features](#features)
 - [Requirements](#requirements)
 - [Installation](#installation)
 - [Configuration](#configuration)
-- [Run the API](#run-the-api)
+- [Starting the API](#starting-the-api)
 - [Endpoints](#endpoints)
-  - [Health check](#1-health-check)
-  - [Search](#2-search)
-  - [Download YouTube media](#3-download-youtube-media)
-  - [Upload an image](#4-upload-an-image)
 - [Errors](#errors)
-- [Operational notes and limitations](#operational-notes-and-limitations)
-- [Legal and responsible use](#legal-and-responsible-use)
-- [License](#license)
+- [Notes](#notes)
 
-## Features
+# Features
 
 - Search music using Deezer.
 - Search YouTube videos.
 - Search movies using The Movie Database (TMDB).
-- Process a YouTube video as MP4 video or MP3 audio and return a temporary direct URL.
+- Download YouTube, Instagram, Facebook, TikTok and Pinterest media.
 - Upload images through ImgBB.
 - JSON responses and standard HTTP status codes for errors.
 
 ## Requirements
 
-- Node.js **20 or later** recommended.
+- Node.js **v24 or later**.
 - npm.
 - `ffmpeg` installed and available on `PATH` for audio extraction and media merging.
-- API keys for the providers used by the relevant endpoints:
-  - TMDB: movie search.
-  - ImgBB: image upload.
-
-YouTube downloads depend on YouTube and `yt-dlp` availability and may be affected by upstream restrictions, network conditions, or platform changes.
+- A **local server** or **VPS** (Render is recommended)
+- **API keys** for the providers used by the relevant endpoints (see [environment values](#1-environment-values)).
 
 ## Installation
 
@@ -50,55 +38,77 @@ cd reflection
 npm install
 ```
 
-The project imports the following runtime packages: `express`, `cors`, `axios`, `yt-search`, `youtube-dl-exec`, `multer`, and `p-queue`. Make sure the repository's `package.json` defines the required dependencies and uses ES modules.
-
 ## Configuration
 
-Set the environment variables for the endpoints you intend to use:
+### 1. Environment values
+Some features like image uploading an movie searching require an API key. The services used are completely free and have almost unlimited free tier limits. You can however use the API for free, but some endpoints might not function the way they are supposed to.
 
-| Variable | Required for | Description |
+The following API keys can be configured:
+
+| Key | Requirement | Where to find |
 | --- | --- | --- |
-| `TMDB_API_KEY` | Movie search | API key used to query TMDB. |
-| `IMGBB_API_KEY` | Image upload | API key used to upload images to ImgBB. |
-| `PORT` | Optional | Port the server listens on. Defaults to `8080`. |
+| `TMDB_API_KEY` | Movie search | [The Movie Database](https://www.themoviedb.org/settings/api) |
+| `IMGBB_API_KEY` | Image upload | [ImgBB](https://api.imgbb.com/) |
 
-For local development, you can create a `.env` file, but the current source code does **not** load `.env` files automatically. Supply variables through your shell, deployment environment, or a Node version that supports `--env-file`.
-
-Example `.env`:
-
+Create a `.env` file and add the keys, or inject the values to your VPS environment variables service.
 ```dotenv
-TMDB_API_KEY=your_tmdb_api_key
-IMGBB_API_KEY=your_imgbb_api_key
-PORT=8080
+TMDB_API_KEY="xxxx"
+IMGBB_API_KEY="xxxx"
 ```
 
-On a recent Node.js version, you can load that file with:
+### 2. Configs
 
+You can edit the `configs` object in [app.js](./app.js#16) to match your preferences:
+
+| Key | Description | Default | Notes |
+| --- | --- | --- | --- |
+| `max_process_limit` | The maximum number of concurrent requests that can run at a time. | 1 | Too many concurrent processes can crash your server. |
+| `max_file_size` | The maximum file size the API can upload (in kilobytes). | 104857600 | The third-party upload services may have their own limits and reject your uploads if your limit surpasses theirs. |
+| `port` | The port to listen on. | 8080 | If you're using a VPS, the port value provided by the will be treated as a priority. |
+
+```js
+const configs = {
+    max_process_limit: 1,
+    max_file_size: 104857600,
+    port: 8080
+}
+```
+
+### 3. Cookies
+The youtube downloader, `youtube-dl-exec`, may run into bot verification issues while downloading your files. You can bypass these checks completely by including cookies. To add cookies:
+
+- Prepare a disposable Google account you won't be using anytime after this.
+- Install the `Get cookies.txt LOCALLY` extension on your PC's browser.
+- Go to **the extensions page** on your browser and turn on **"Allow in Incognito"** (or any similar option) to allow the extension run in incognito mode.
+- Open a new **incognito** tab on your browser.
+- Go to [YouTube](https://www.youtube.com) and login to your account.
+- In the same tab, go to the [YouTube bots page](https://www.youtube.com/robots.txt).
+- Open your `Get cookies.txt LOCALLY` extension and ensure the format is **Netscape**. Click **Export** and export your cookies to `cookies.txt`.
+- **IMPORTANT:** Immediately close your incognito tab. **Do Not logout of YouTube**, and ensure you do not login to the account again, unless you're adding new cookies.
+- Paste the `cookies.txt` file in your project directory, **_I'll handle the rest_**.
+
+## Starting the API
+
+The way you start the API depends on how you're deploying it.
+### 1. VPS
+Most VPS services inject variables automatically for you. If you've specified your variables on your VPS dashboard, run the `start` script to avoid conflicts:
 ```bash
-node --env-file=.env app.js
+npm run start
 ```
+Your server will give you the endpoint to your live API.
 
-Do not commit real API keys or other secrets to source control.
-
-## Run the API
-
-Start the server using your project's configured start script, if available. Otherwise, if the entry point is `app.js`:
-
+### 2. Locally
+If you're running locally, you'll need to inject the values yourself. Run the `dev` script to start the API with your values:
 ```bash
-node --env-file=.env app.js
+npm run dev
 ```
-
-The default base URL for local development is `http://localhost:8080`.
+Your api should be available on [localhost:8080](http://localhost:8080/api) (or whatever your port is).
 
 ## Endpoints
+The following are the available endpoints, their request types and example JSON:
 
-All responses shown below are illustrative examples. IDs, URLs, metadata, and result counts will vary depending on the upstream service and the query.
-
-### 1. Health check
-
-`GET /api`
-
-Checks whether the API server is responding.
+### 1. Health check - `/api`
+Checks whether the API server is running.
 
 **Example request**
 
@@ -114,11 +124,10 @@ GET /api
 }
 ```
 
-### 2. Search
+### 2. Search - `/api/search/:type?query=...`
+**GET**
 
-`GET /api/search/:type?query=...`
-
-Searches a supported media catalogue. The `query` value should be URL-encoded when it contains spaces or special characters.
+Searches a supported media catalogue.
 
 **Path parameter**
 
@@ -165,8 +174,6 @@ GET /api/search/music?query=Daft%20Punk
 }
 ```
 
-Each music result contains `id`, `title`, `preview`, `thumbnail`, `artist`, and `album`. The `preview` field is supplied by Deezer and may be empty or unavailable for some tracks.
-
 #### Example: YouTube search
 
 ```http
@@ -193,8 +200,6 @@ GET /api/search/yt?query=lofi%20music
   "length": 1
 }
 ```
-
-Each YouTube result contains `id`, `title`, `author`, `url`, `thumbnail`, and `description`.
 
 #### Example: movie search
 
@@ -223,25 +228,22 @@ GET /api/search/movie?query=Inception
 }
 ```
 
-Each movie result contains `id`, `title`, `overview`, `release_date`, `rating`, and `poster`. `poster` is `null` when TMDB does not provide a poster path.
+### 3. Download - `/api/download/:type?query=...&media=...`
+**GET**
 
-### 3. Download YouTube media
-
-`GET /api/download/:type?query=...&media=...`
-
-Searches for or accepts a YouTube URL, processes the selected media, uploads the resulting file to a temporary file host, and returns a URL to the hosted file.
+Searches for or accepts a URL, processes the selected media, uploads the resulting file to a temporary file host, and returns a URL to the hosted file.
 
 **Path parameter**
 
 | Parameter | Accepted values | Description |
 | --- | --- | --- |
-| `type` | `yt` | The only download type currently implemented. |
+| `type` | `yt` | Selects the download provider. |
 
 **Query parameters**
 
 | Parameter | Required | Default | Description |
 | --- | --- | --- | --- |
-| `query` | Yes | — | A YouTube URL/video link or search phrase. Search phrases resolve to the first YouTube search result. |
+| `query` | Yes | — | A URL/video link or search phrase. Search phrases resolve to the first search result. |
 | `media` | No | `video` | `video` returns MP4 video; `audio` extracts MP3 audio. |
 
 #### Example: download video
@@ -290,26 +292,16 @@ GET /api/download/yt?query=artist%20song%20name&media=audio
 }
 ```
 
-**Response fields**
+### 4. Upload - `/api/upload/:type`
+**POST**
 
-- `mode`, `type`, `query`, `media`: describe the request.
-- `title`, `thumbnail`: metadata found during search. These may be empty when a direct YouTube URL is supplied.
-- `mimetype`: `video/mp4` for video or `audio/mpeg` for audio.
-- `size`: resulting file size in bytes.
-- `url`: hosted media URL returned by the temporary file provider.
-- `expires`: Unix timestamp in **milliseconds** indicating the expected expiration time.
+Uploads an image or file to ImgBB or a temporary host respectively.
 
-Temporary hosting is provided through Litterbox, with Tmpfiles used as a fallback. Availability, expiry, and direct-link behavior depend on those third-party services; do not treat the URL as permanent storage.
+**Path parameter**
 
-### 4. Upload an image
-
-`POST /api/upload/image`
-
-Uploads an image to ImgBB. This endpoint expects a `multipart/form-data` request with the file field named **`image`**.
-
-**Query parameters:** none.
-
-**Required configuration:** `IMGBB_API_KEY`.
+| Parameter | Accepted values | Description |
+| --- | --- | --- |
+| `type` | `image`, `file` | Selects the upload provider. |
 
 #### Example request
 
@@ -329,10 +321,6 @@ curl -X POST http://localhost:8080/api/upload/image \
   "expires": null
 }
 ```
-
-The example's `url` is the display URL returned by ImgBB. In the current implementation, `expires` is set to `Infinity` in JavaScript; JSON serialization represents non-finite numeric values as `null`.
-
-Although `/api/upload/:type` accepts a `type` path segment, only `image` is supported. The `file` type is explicitly rejected in this version.
 
 ## Errors
 
@@ -364,23 +352,17 @@ Common error cases include:
 
 The exact error message depends on the endpoint and the upstream service. Some upstream failures may be returned as `500`.
 
-## Operational notes and limitations
+### Notes
 
 - **Temporary files:** Downloaded media is uploaded to an external temporary host; it is not stored permanently by Reflection.
-- **Download size:** The upload helper rejects files larger than **100 MB**.
-- **Concurrency:** Download processing is queued with a concurrency limit of **one** task at a time.
+- **Download size:** The upload helper may reject files larger than the range **100 MB - 1 GB**.
+- **Concurrency:** Download processing is queued with a concurrency limits.
 - **Third-party dependencies:** Search, downloading, and hosting rely on external services that may change, rate-limit requests, or become unavailable.
 - **YouTube access:** Downloads may fail when YouTube blocks a request or requires additional verification.
 - **Image upload:** Requires a valid ImgBB API key.
-- **File upload:** General file uploads are not supported by the current `/api/upload/file` implementation.
-- **Production hardening:** Configure suitable rate limits, request logging, monitoring, and deployment-level safeguards before exposing an instance publicly. CORS is enabled in the current source.
+- **CORS:** CORS is enabled in the current source.
 
-## Legal and responsible use
+**Hope you enjoy our project!**
 
-Reflection is an open-source media-handling utility. **It does not promote, endorse, or encourage illegal activity, copyright infringement, or the distribution of pirated content.** It is intended for lawful media discovery, metadata retrieval, personal use where permitted, and developer experimentation.
+**Maintained by [Halo Studios](https://halostudios.xyz). Copyleft (c) 2026 Halo Studios**
 
-Users are responsible for obtaining any permissions required to access, download, store, or redistribute media and for complying with applicable laws, copyright rules, and third-party platform terms. The availability of an endpoint does not grant rights to any content returned by it. Halo Studios does not authorize unlawful use of the project.
-
-## License
-
-No license has been specified in this README. Before presenting Reflection as open source for reuse, distribution, or modification, add a `LICENSE` file and update this section to identify the chosen license.
