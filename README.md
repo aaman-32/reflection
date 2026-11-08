@@ -33,7 +33,7 @@
 ## Installation
 
 ```bash
-git clone https://github.com/amanumar32/reflection.git
+git clone https://github.com/aaman-32/reflection.git
 cd reflection
 npm install
 ```
