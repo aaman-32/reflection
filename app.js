@@ -161,13 +161,14 @@ app.post('/api/upload/:type', _upload.single('image'), async (req, res) => {
         data.size = stats.size;
 
         if (type === 'image') {
-            if (!process.env.IMGBB_API_KEY) throw new Error('Required environment variable is missing.', { cause: 500 });
+            if (!process.env.IMG_API_KEY) throw new Error('Required environment variable is missing.', { cause: 500 });
             const base64 = fs.readFileSync(file.path, { encoding: 'base64' });
             const params = new URLSearchParams();
             params.append('image', base64);
-            const response = await axios.post(`https://api.imgbb.com/1/upload?key=${process.env.IMGBB_API_KEY}`, params);
-            const img = response.data.data;
-            data.mimetype = img.image.mime;
+            const response = await axios.post(`https://freeimage.host/api/1/upload?key=${process.env.IMG_API_KEY}`, params);
+            const img = response.data?.image;
+            if (!img) throw new Error(response.data?.error?.message || 'Image upload failed', { cause: 502 });
+            data.mimetype = img.mime;
             data.url = img.display_url;
         } else if (type === 'file') {
             throw new Error('File upload is not supported in this version. Please use image upload instead.', { cause: 400 });
