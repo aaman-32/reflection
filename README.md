@@ -48,12 +48,12 @@ The following API keys can be configured:
 | Key | Requirement | Where to find |
 | --- | --- | --- |
 | `TMDB_API_KEY` | Movie search | [The Movie Database](https://www.themoviedb.org/settings/api) |
-| `IMG_API_KEY` | Image upload | [ImgBB](https://api.imgbb.com/) |
+| `IMGBB_API_KEY` | Image upload | [ImgBB](https://api.imgbb.com/) |
 
 Create a `.env` file and add the keys, or inject the values to your VPS environment variables service.
 ```dotenv
 TMDB_API_KEY="xxxx"
-IMG_API_KEY="xxxx"
+IMGBB_API_KEY="xxxx"
 ```
 
 ### 2. Configs
